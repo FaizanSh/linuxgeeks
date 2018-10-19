@@ -11,8 +11,4 @@ The example of this issue is the MYSQL database. It uses a file to record socket
 The main purpose of my final year project is to make a terminal utility that will try to disrupt the application locks and identify any potential issues like software crashing, permanent locking or restarting only after a system reboot. If possible, we will try to identify the type of locks along with the critical resources that were locked. In addition to that, we will (if possible for that software) also identify the processes that were waiting for the resource as well as the back trace of specific calls that lead to this problem. This aiding information would be enough for the debugger/programmer to identify where the problem has occurred and where he/she needs to make changes to get the software live without errors
 
 # Progress
-I'm still in learning phase
-Ptrace()
-Signals
-Fork
-Exec
+I'm still in learning phase. Completed learning Ptrace(), Signals, Fork and Exec.
