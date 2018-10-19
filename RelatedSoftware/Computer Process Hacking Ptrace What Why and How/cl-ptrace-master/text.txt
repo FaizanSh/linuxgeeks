@@ -1,0 +1,142 @@
+Ptrace() 
+
+ 
+
+ A wizardly system call that empowers its beneficiary process to manipulate other processes. It’s a swiss knife of a debugger, which is having all the tools of controlling the executing process along with peeking and poking the vitals. It provides a mechanism by which you can write a program that can attach to a running process as a parent and then can-do certain things like, stepping through the code one line at a time, set breakpoints, have access to the entire address space, stack, and registers, patch running code of the target etc. [1]. 
+
+From the man page of ptrace() 
+
+       The  ptrace()  system  call  provides a means by which one process (the "tracer") may observe and control the execution of another process (the "tracee"), and  examine  and change the tracee's memory and registers. It is primarily used to implement breakpoint debugging and system call tracing. 
+
+In order to get manipulated, the Tracee must get attached with its tracer. Each tracer can get attached to only one thread of a multi-threaded application/process. It takes a magic request (from the list of enums) in its first parameter and doing completely different things depending on its value.  
+
+Ptrace Prototype 
+
+#include <sys/ptrace.h> 
+long ptrace(enum __ptrace_request request, pid_t pid, void *addr, void *data); 
+
+Request augment decides what is to be done. 
+
+Pid is the process ID of the process that is to be traced. 
+
+Addr is the offset in the user space. It’ll be used on the basis of the request. 
+
+Data something that is to be written to the tracee, if told so. It depends on the request argument. 
+
+How does it work? 
+
+Whenever a process calls ptrace it at first locks the kernel and do stuff that was required by the request before unlocking it. Certain things happen during the locking phase. What follows is an overview of some of the request’s behavior. 
+
+PTRACE_TRACEME 
+
+ Any signals (except SIGKILL) either delivered from outside or from any subsequent ‘exec’ calls made by the process, causes it to stop and lets the parent decide how to proceed. This request only sets a flag that grants permission to trace the process. 
+
+Important insight: All the parameters other than ‘request’ are ignored. After executing ptrace(PTRACE_TRACEME), every subsequent successful exec calls initiate a signal SIGTRAP.   
+
+PTRACE_ATTACH 
+
+   This is pretty handy, you can make the current process the tracer of the target process, "become the parent of that process by attaching yourself to it". But getpid() will return the child's real parent! 
+
+Note: the *init* process is a big deal - nobody is allowed to trace or control it. A process is also not allowed to trace itself. 
+
+ What actually happens: 
+
+In the background all the cases are handled, before permission to attach is granted. 
+
+Is it the ‘init’ process -the forbidden one. 
+
+Or is it the same process. 
+
+Or If the process is already traced process. 
+
+Then the child is removed from the task queue and its parent process field is changed. It is put to the queue again in such a position that *init* comes next to it. 
+
+  
+
+PTRACE_DETACH 
+
+This is the inverse of Ptrace_Attach. It takes the following steps when called. 
+
+Reset the Ptrace flag. 
+
+Move child to original position of the process queue. 
+
+The pid of the real parent is written in the parent field.  
+
+    *addr* is ignored 
+
+    *data* arg the parent can send an exit code for the child. 
+
+PTRACE_CONT 
+
+It allows the stopped child to continue its execution.  
+
+PTRACE_SYSCALL 
+
+This allow the child to execute until the invocation of a syscall. 
+
+PTRACE_SINGLESTEP 
+
+This also allows the child process execution, but one line at a time. Like PTRACE_SYSCALL except we stop here on each line.  
+
+PTRACE_GETREGS 
+
+Fetches registers of the process such as general purpose, floating point. Data argument will store these, furthermore it expects a struct user_regs_struct variable. 
+
+PTRACE_PEEKTEXT || PTRACE_PEEKDATA 
+
+Read a word from the process' memory. Apparently, they're identical on Linux because "Linux does not have separate text and data address spaces”.  
+
+   *addr* is the byte offset from which to read the word. 
+
+   *data* is ignored 
+
+PTRACE_PEEKUSER 
+
+Read a word from the tracee's user_area (register + open files, etc.) 
+
+   *addr* is the byte offset from which to read the word 
+
+   *data* is ignored 
+
+PTRACE_GETREGS 
+
+Reads all the registers of the tracee's user_area and puts it in the given struct of type ‘user_regs_struct’ 
+
+   *data* expects a pointer to user_regs_struct, so pass by reference, and fills it with the registers of the tracee. 
+
+   *addr* is ignored  
+
+PTRACE_POKETEXT || PTRACE_POKEDATA || PTRACE_POKEUSER 
+
+The inverse of the above peeks: write the given word at the offset (in bytes) specified in the data or user_area of the tracee. 
+
+   *data* word to write to tracee. 
+
+   *addr* byte offset where to write to. 
+
+ 
+
+Signals 
+
+Signals can be sent to a process using kill() and raise() methods. Every process has a default dealing method that define its behavior when it receives the signal. 
+
+Some default replays are as follow 
+
+Term 
+Default action is to terminate the process 
+
+Core 
+Terminate process and dump core 
+
+Stop 
+Stop the executing process 
+
+Con 
+Continue process, if it is currently stopped. 
+
+Signal can be generated for a process as whole or only for a thread like SIGSEGV (invalid memory reference). 
+
+ 
+
+ 
