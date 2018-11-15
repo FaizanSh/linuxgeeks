@@ -1,14 +1,32 @@
 # Crash Analysis Tool for Profiling Multi-Tasking Applications 
 
+# Abstract
+A software utility capable of analyzing crashes of multitasking application. With its help, developers can reassure that the application has the ability to handle anomalies like power off, sudden kill, accidental resources snatching, race-condition, resources unavailability, permanent locking and etc. In general, utility’s focus will be on the unhandled stray locks that might be of an effect in any case of the anomaly stated above. The common effect could be not restarting of the application, not able to score a particular recourse, crashing several times and many more. The purpose of this software is to point out what could go wrong in case of any irregularity.
+
 # Motivation
-In Linux, any process or thread is called a task. An application consists of multiple tasks (threads and(or) processes). When one task holds a resource, other tasks have to wait. In multitasking systems, different tasks can run simultaneously and even can share a common resource. And when sharing happens, the task which is going to use the resource will apply a lock (mutex, semaphore, spinlock etc.) to proclaim its ownership and prevent intruders from claiming that specific resource. In this way, several tasks can use the same resource, but exclusively.  
+In multitasking application, threads/processes use locks to communicate with other tasks about the resource they are currently occupying. Sometimes the lock remains unhandled as the task had to stop abruptly or it was being killed by the kernel. These stray locks compel the software to behave oddly as in many cases the utility might not even start or needs a complete reboot or sometimes the lock is permanent which needs extensive manual debugging before the user is able to use it again. MYSQL Database is one example of it that use file lock to acquire a socket which has beside of some plus points more adverse effects as in case of system failure the DBMS won’t get the chance to leave the resource and in future the file is already there, and system consider that socket already being locked and not allowed to acquire.  
+This is one example and there are countless to make oneself familiar with the complication an incautious behavior of a programmer arises. 
+Keeping in mind the problems and the efforts end user might be needing to put in, I took this challenge to devise a tool that’ll make rigorous disruption in the locking mechanism of a software and show the developer exact spot where the problem is arising. 
+This is a challenging task and very few people try to work at this level. I wanted to go deep into the kernel, deep enough to cherish the things many developers take for granted.     
 
-But sometimes things don’t go as planned. Your application lock something but operating system crashes the application or user plug out the power. In this case, the application’s credibility depends upon its locking mechanism because it didn’t get the time to unlock the resource. If the locking mechanism was not time-dependent or object-dependent as file locks, so when the application gets restarted it needs to acquire the same resource which is not locked by another process, but itself. This is when the problem arises, and software will get stuck along with the resource. The user will manually locate this problem to make the system running, but everyone will never know how and why this error occurred in the first place.  
+# Implementation Methodology
+Implementation methodology requires the following steps to accomplish for completing this software. Before getting to these steps we are required to get yourself acquainted with some related software like strace, ltrace, lsof, and some system calls like ptrace, execvp, and techniques of Inter process communication (IPC) like signals and system locks etc. These prequels will help us get our main part done with ease.
 
-The example of this issue is the MYSQL database. It uses a file to record socket lock, and once in a blue moon when system abruptly gets shut down it doesn’t get the time to remove that lock file which in result restrict acquiring that socket again or sometimes do not allow the database to restart.    
-
-# Plan
-The main purpose of my final year project is to make a terminal utility that will try to disrupt the application locks and identify any potential issues like software crashing, permanent locking or restarting only after a system reboot. If possible, we will try to identify the type of locks along with the critical resources that were locked. In addition to that, we will (if possible for that software) also identify the processes that were waiting for the resource as well as the back trace of specific calls that lead to this problem. This aiding information would be enough for the debugger/programmer to identify where the problem has occurred and where he/she needs to make changes to get the software live without errors
+## Detection
+This step requires us to build individual detection system for different types of locks. Every type of lock mutex, semaphore, spinlock etc. requires a sperate identification method. 
+## Back Trace
+Printing the Back Trace of a specific call. This may include steps that lead to this call. The stack can be a great help in this case.
+## Which resource is lock
+To generate a log having all the description of the resource that has been locked.
+## Which process is lock
+To generate a log having all the description of the process that has been locked.
+## What type of lock
+To generate a log having all the description of the types of locks on the process and resource.
+## Testing some of well-known software
+In the end for validation purposes, some well-known application and some pre-written fake application must be tested in order to get the best results from the utility.
 
 # Progress
-I'm still in learning phase. Completed learning Ptrace(), Signals, Fork and Exec.
+Completed learning Ptrace(), Signals, Fork and Execvp.
+Read Two Chapters from Self Service Linux Book. <Still Reading>
+Read Three Chapters from Linux: Debugging and performance training.<Still Reading>
+Writing Prototype Code. <Still In Progress>
