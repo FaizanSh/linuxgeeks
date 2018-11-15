@@ -1,0 +1,19 @@
+# depslib dependency file v1.0
+1541496901 source:/media/geek/oldubuntu/AnjumNaveed/straceUnderstand/ministrace.c
+	<sys/ptrace.h>
+	<sys/reg.h>
+	<sys/wait.h>
+	<sys/types.h>
+	<unistd.h>
+	<stdlib.h>
+	<stdio.h>
+	<errno.h>
+	<string.h>
+	<locale.h>
+
+1541371014 source:/media/geek/oldubuntu/AnjumNaveed/straceUnderstand/helloworld.c
+	<stdlib.h>
+	<stdio.h>
+
+1541496003 source:/media/geek/oldubuntu/AnjumNaveed/straceUnderstand/test.c
+
