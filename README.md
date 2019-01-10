@@ -27,6 +27,7 @@ In the end for validation purposes, some well-known application and some pre-wri
 
 # Progress
 Completed learning Ptrace(), Signals, Fork and Execvp.
-Read Two Chapters from Self Service Linux Book. <Still Reading>
+Read four Chapters from Self Service Linux Book. <Still Reading>
 Read Three Chapters from Linux: Debugging and performance training.<Still Reading>
 Writing Prototype Code. <Still In Progress>
+I was having defculty with C so I am taking course "C Programming with Linux" from edx. <its a parent course of 7 sub courses><I have completed 2 of them>
