@@ -3,12 +3,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
+//he stdarg.h header defines a variable type va_list and three macros which can be used to get the arguments in a function when the number of arguments are not known i.e. variable number of arguments.
 #include <errno.h>
+//The <errno.h> header file defines the integer variable errno, which is set by system calls and some library functions in the event of an error to indicate what went wrong.
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/ptrace.h>
 #include <sys/user.h>
+
 
 const char *errors[] = {
     "NULL:","EPERM","ENOENT","ESRCH","EINTR","EIO","ENXIO","E2BIG","ENOEXEC","EBADF","ECHILD","EAGAIN","ENOMEM","EACCES"
@@ -446,24 +449,94 @@ const char *syscalls[] = {
 
 /* *** eprintf ***
 * Description: general error printing function
+* https://www.tutorialspoint.com/c_standard_library/stdarg_h.htm
 */
+//here fmt stand for format
+//This is the C string that contains the text to be written to the stream. It can optionally contain embedded format tags that are replaced by the values specified in subsequent additional arguments and formatted as requested
+//https://www.tutorialspoint.com/c_standard_library/c_function_vfprintf.htm
 void eprintf( char const *fmt, ... ) {
-    va_list ap;
+    va_list ap; //perhaps variable argument list
     va_start(ap, fmt);
     vfprintf( stderr, fmt, ap ) ;
     va_end(ap);
 }
 
+//
+//int readString( pid_t pid, void *addr, char *string, size_t maxSi) {
+//    int rc = 0 ;
+//    long peekWord ;
+//    char *peekAddr ;
+//    int i ;
+//    int stringIndex = 0 ;
+//    char *tmpString ;
+//    int stringFound = 0 ;
+//    string[0] = '\0' ;
+//    peekAddr = (char *) ((long)addr & ~(sizeof(long) - 1 ) ) ;
+//// The PTRACE_PEEKDATA feature reads full words from the proce
+//// address space.
+//    peekWord = ptrace( PTRACE_PEEKDATA, pid, peekAddr, NULL ) ;
+//    if ( -1 == peekWord ) {
+//        perror( "ptrace( PTRACE_PEEKDATA..." ) ;
+//        rc = -1 ;
+//        goto exit ;
+//    }
+//    // Keep in mind that since peekAddr is aligned
+//// it might contain a few characters at the beginning
+//    //int charsToCopy = sizeof( long ) - ( (long)addr - long)peekAdd;
+//    int charsToCopy = ( sizeof( long ) - ( (long)addr - long)peekAddr );
+//    tmpString = (char *)&peekWord ;
+//    tmpString += sizeof( long ) - charsToCopy ;
+//    for ( i = 0 ; i < charsToCopy ; i++ ) {
+//        string[ stringIndex ] = tmpString[ i ] ;
+//        stringIndex++ ;
+//        if ( maxSize - 1 == stringIndex ) {
+//            string[ stringIndex ] = '\0';
+//            goto exit ;
+//        }
+//    }
+//    tmpString = (char *)&peekWord ;
+//    peekAddr += sizeof( long) ;
+//// Fall into a loop to find the end of the string
+//    do
+//    {
+//        peekWord = ptrace( PTRACE_PEEKDATA, pid, peekAddr, NULL ) ;
+//        if ( -1 == peekWord ) {
+//            perror( "ptrace( PTRACE_PEEKDATA..." ) ;
+//            rc = -1 ;
+//            goto exit ;
+//        }
+//        for ( i = 0 ; i < sizeof(long) ; i++ ) {
+//            string[ stringIndex ] = tmpString[ i ] ;
+//            if ( maxSize - 1 == stringIndex ) {
+//                string[ stringIndex ] = '\0';
+//                goto exit ;
+//            }
+//            if ( string[ stringIndex ] == '\0' ) {
+//                stringFound = 1 ;
+//                break ;
+//            }
+//            stringIndex++ ;
+//        }
+//        peekAddr += sizeof( long) ;
+//    } while ( !stringFound ) ;
+//exit:
+//    return rc ;
+//}
 
 char *readString(pid_t child, unsigned long addr) {
 
 //read_string takes a child to read from, and the address of the string
 //it's going to read.
 
-    char *val = malloc(4096);
-    int allocated = 4096, read;
-    unsigned long tmp;
 
+    int allocated = 4096;
+    char *val = malloc(allocated);//A buffer to copy the string into
+    //    int allocated = 4096, read;
+    int read = 0; //counters of
+//how much data we've copied and allocated
+    unsigned long tmp = 0 ;//and a temporary variable for
+//reading memory.
+    errno = 0; //it is check just to make error 0 and see what we get
 //We need some variables. A buffer to copy the string into, counters of
 //how much data we've copied and allocated, and a temporary variable for
 //reading memory.
@@ -475,10 +548,15 @@ char *readString(pid_t child, unsigned long addr) {
         }
 
 //We grow the buffer if necessary. We read data one word at a time.
+        // eprintf( "\n Going to ptrace: %s \n", strerror( errno ) ) ;
 
+        //this very line is generating input/output error
         tmp = ptrace(PTRACE_PEEKDATA, child, addr + read);
+        //huhuhuhuhu
+
         if(errno != 0) {
             val[read] = 0;
+            eprintf( "\n Read String Failed due to: %s \n", strerror( errno ) ) ;
             break;
         }
 
@@ -510,7 +588,23 @@ int spawnChildProcess( int argc, char *argv[] ) {
     memcpy(args, argv, argc * sizeof(char*)); // mid * is multiply size of char* will give 8 for 64 bit and which means 8 bit for each address and 4 for 32 bit means 4 bit for each address
     args[argc] = NULL;
 
+
+    if(strcmp(args[0], "-p") == 0) {
+        ptrace(PTRACE_ATTACH,atoi(args[1]),0,0);
+        //ptrace(PTRACE_TRACEME) sets things up so that the parent is the tracer. For any given tracee, only one process at a time can be its tra
+        if ( -1 == sRC ) {
+            eprintf( "ptrace failed with request \"PTRACE_TRACEME\": %s\n", strerror( errno ) ) ;
+            sRC = errno ;
+            goto exit ;
+        }
+
+        //lets send signal to it self which further will be recieved by the parent and parent will get the control
+        kill(atoi(args[1]), SIGSTOP);
+        goto exit ;
+    }
+
     //its a siren I just called that notifies the parent to just keep an eye on me
+    //This tells the kernel that the process is being traced
     sRC = ptrace( PTRACE_TRACEME, 0, 0, 0 ) ;
     //ptrace(PTRACE_TRACEME) sets things up so that the parent is the tracer. For any given tracee, only one process at a time can be its tra
     if ( -1 == sRC ) {
@@ -519,13 +613,13 @@ int spawnChildProcess( int argc, char *argv[] ) {
         goto exit ;
     }
 
-    //lets send signal to it self which further will be recieved by the parent
+    //lets send signal to it self which further will be recieved by the parent and parent will get the control
     kill(getpid(), SIGSTOP);
 
     printf("child to be %s",argv[0]);//lets check what we got
+    //and when the child executes the execve system call, it hands over control to its parent.
     sRC = execvp(args[0], args) ; // execvp needs null terminated array thats why we are coppying this into new one
     if ( -1 == sRC ) {
-
         eprintf( "exec failed: %s\n", strerror( errno ) ) ;
         sRC = errno ;
         goto exit ;
@@ -535,20 +629,35 @@ exit :
 }
 
 
-
+//this function do what?
 int traceChildProcess( pid_t tracedPid ) {
     int mRC = 0 ; // Return code for this function
     int sRC = 0 ; // Return code for system calls
     int status = 0 ; // Status of the stopped child process
     pid_t stoppedPid = 0 ; // Process ID of stopped child process
-    struct user_regs_struct registers;
-    stoppedPid = waitpid( tracedPid, &status, 0 ); // wait for any responce from the child most probably when get sigstop signal because child was said ptracetraceme and in that method sigstop was sent to itself afterthat
-    printf( "Child process stopped for exec\n" );
+    struct user_regs_struct registers; //user_regs_struct contains all the system registes as struct
+
+    printf(" \n\n Stopped_PID %ld || tracedPid %ld \n\n", stoppedPid, tracedPid);
+
+    stoppedPid = waitpid(tracedPid, &status, 0); // wait for any responce from the child most probably
+    //when get sigstop signal because child was said ptracetraceme and in that method sigstop was sent
+    //to itself afterthat
+    //ptrace(PTRACE_SETOPTIONS,stoppedPid,NULL,PTRACE_O_TRACEVFORK);
+    ptrace(PTRACE_SETOPTIONS,stoppedPid,NULL,PTRACE_O_TRACEFORK | PTRACE_O_TRACEVFORK);
+
+    //v1.2
+
+
+    printf("\n\n Stopped_PID %ld || tracedPid %ld \n\n", stoppedPid, tracedPid);
     if ( -1 == stoppedPid ) {
         eprintf( "waitpid failed: %s\n", strerror( errno ) ) ;
         mRC = 1 ;
         goto exit ;
     }
+
+
+    //v1.2
+
 
 // Tell the child to stop in a system call entry or exit don't care that if it was being already traced but this this means stop on every entry and exit point
     ptrace( PTRACE_SYSCALL, stoppedPid, 0, 0 ) ;
@@ -556,10 +665,29 @@ int traceChildProcess( pid_t tracedPid ) {
 // This is the main tracing loop. When the child stops,
 // we examine the system call and its arguments
 //If wait() or waitpid() returns due to the delivery of a signal to the calling process,-1 shall be returned and errno set to [EINTR]
+    long newpid;
+    int inchild=0;
 
-    while ( ( stoppedPid = waitpid( tracedPid, &status, 0 ) ) != -1 ) {
+    while(1) {
+        stoppedPid = waitpid( -1, &status, __WALL);
+        if(status >> 16 == PTRACE_EVENT_FORK) {
+            //ptrace(PTRACE_ATTACH,(pid_t)newpid,NULL,NULL);
+            ptrace(PTRACE_GETEVENTMSG,stoppedPid,NULL, (long) &newpid);
+            ptrace(PTRACE_SYSCALL,newpid,NULL,NULL);
+            printf("Attached to offspring %ld\n",(pid_t)newpid);
+            inchild = 1;
+        }
 
-        sRC = ptrace( PTRACE_GETREGS, stoppedPid, 0, &registers ) ; // lets fetch all the registers in already built in 'struc'ture to store registers
+        if(WIFEXITED(status)) {
+            printf("Child %d exited\n",newpid);
+            inchild = 0;
+        }
+        if(inchild) {
+            printf("Child %ld \n",(pid_t)newpid);
+            sRC = ptrace( PTRACE_GETREGS, (pid_t)newpid, 0, &registers);
+        } else {
+            sRC = ptrace( PTRACE_GETREGS, stoppedPid, 0, &registers); // lets fetch all the registers in already built in 'struc'ture to store registers
+        }
 
         if ( -1 == sRC ) {
             eprintf( "ptrace failed with request PTRACE_GETREGS:%s\n", strerror( errno ) ) ;
@@ -571,6 +699,7 @@ int traceChildProcess( pid_t tracedPid ) {
         // When the traced process stops on a system call ENTRY, the EAX register will contain -ENOSYS
 
         if ( registers.rax == -ENOSYS) {
+            //Stderr, also known as standard error, is the default file descriptor where a process can write error messages.
             //if the call is entry then we have got the syscall number that we are just entered into in origrax and it easily can be converted to name via array
             fprintf( stderr, " %d: %s( ", stoppedPid, syscalls[registers.orig_rax]) ; //the unistd_64.h file have all the numbers that ORIG_RAX will contain
             //The correct header file to get the system call numbers is sys/syscall.h. The constants are called SYS_### where ### is the name of the system call you are interested in. The __NR_### macros are implementation details and should not be used.
@@ -581,9 +710,13 @@ int traceChildProcess( pid_t tracedPid ) {
 // Get file name and print the "file name" argument
 //in a more fancy way
                 char* fileName;
-//                readString( stoppedPid, (void *)registers.rbx,
-//                            fileName, 1024 ) ;
-                fileName = readString( stoppedPid, registers.rbx);
+////               readString( stoppedPid, (void *)registers.rbx,
+////                           fileName, 1024 ) ;
+//                fileName = readString( stoppedPid,registers.rbx);
+//                fprintf( stderr, "\"%s\", %#08x, %#08x",
+//                         fileName, registers.rcx, registers.rdx ) ;
+                //I commented above and changed it to check the results
+                fileName = readString( stoppedPid,registers.rcx);
                 fprintf( stderr, "\"%s\", %#08x, %#08x",
                          fileName, registers.rcx, registers.rdx ) ;
             }
