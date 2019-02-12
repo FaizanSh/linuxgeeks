@@ -1,0 +1,13 @@
+This thing is already compiled and to run it ./main Arguments
+example ./main strac ls
+
+if you want to compile it again
+
+gcc -c helpingFunctions.c
+gcc -c spawnChild.c
+gcc -c traceChild.c
+gcc -c main.c
+
+gcc main helpingFunctions spawnChild traceChild -o main
+
+
