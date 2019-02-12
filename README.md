@@ -29,5 +29,6 @@ In the end for validation purposes, some well-known application and some pre-wri
 Completed learning Ptrace(), Signals, Fork and Execvp.
 Read four Chapters from Self Service Linux Book. <Still Reading>
 Read Three Chapters from Linux: Debugging and performance training.<Still Reading>
-Writing Prototype Code. <Still In Progress>
+Writing Prototype Code.
 I was having defculty with C so I am taking course "C Programming with Linux" from edx. <its a parent course of 7 sub courses><I have completed 3 of them>
+Extending Prototype to find the multithreading calls <that the code now it has bugs>
