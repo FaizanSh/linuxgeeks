@@ -1,0 +1,87 @@
+# depslib dependency file v1.0
+1549445752 source:/home/geek/Downloads/Study/AnjumNaveed/lastfyp/helpingFunctions.c
+	<asm/unistd.h>
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<stdarg.h>
+	<errno.h>
+	<string.h>
+	<sys/types.h>
+	<sys/wait.h>
+	<sys/ptrace.h>
+	<sys/user.h>
+
+1554067344 source:/home/geek/Downloads/Study/AnjumNaveed/lastfyp/main.c
+	"helpingFunctions.h"
+	"spawnChild.h"
+	"traceChild.h"
+	"list.h"
+	<asm/unistd.h>
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<stdarg.h>
+	<errno.h>
+	<string.h>
+	<sys/types.h>
+	<sys/wait.h>
+	<sys/ptrace.h>
+	<sys/user.h>
+
+1549445808 /home/geek/Downloads/Study/AnjumNaveed/lastfyp/helpingFunctions.h
+	<sys/types.h>
+
+1554034935 /home/geek/Downloads/Study/AnjumNaveed/lastfyp/spawnChild.h
+
+1549445968 /home/geek/Downloads/Study/AnjumNaveed/lastfyp/traceChild.h
+	<sys/types.h>
+
+1554034811 source:/home/geek/Downloads/Study/AnjumNaveed/lastfyp/spawnChild.c
+	<asm/unistd.h>
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<stdarg.h>
+	<errno.h>
+	<string.h>
+	<sys/types.h>
+	<sys/wait.h>
+	<sys/ptrace.h>
+	<sys/user.h>
+
+1549869879 source:/home/geek/Downloads/Study/AnjumNaveed/lastfyp/strace.c
+
+1554068292 source:/home/geek/Downloads/Study/AnjumNaveed/lastfyp/traceChild.c
+	<asm/unistd.h>
+	<stdio.h>
+	<stdlib.h>
+	<unistd.h>
+	<stdarg.h>
+	<errno.h>
+	<string.h>
+	<sys/types.h>
+	<sys/wait.h>
+	<sys/ptrace.h>
+	<sys/user.h>
+	"data.h"
+	"list.h"
+	<sys/reg.h>
+
+1549445981 /home/geek/Downloads/Study/AnjumNaveed/lastfyp/data.h
+
+1554065841 source:/home/geek/Downloads/Study/AnjumNaveed/lastfyp/list.c
+	<stdbool.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+
+1554062585 source:/home/geek/Downloads/Study/AnjumNaveed/lastfyp/stacktrace.c
+
+1554065810 /home/geek/Downloads/Study/AnjumNaveed/lastfyp/list.h
+	<sys/types.h>
+	<stdbool.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+
