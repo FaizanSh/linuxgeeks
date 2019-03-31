@@ -4,7 +4,7 @@
 ..............................................................
 ..............................................................
 This thing is already compiled and to run it ./main Arguments
-example ./main strace ls
+example ./main ls
 
 if you want to compile it again
 
