@@ -1,3 +1,4 @@
+//4April
 #include <asm/unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +32,7 @@ const char *name_of_signal_number(int num);
 
 int traceChildProcess( pid_t tracedPid )
 {
+    fprintf( stderr, "I am in Parent\n" );
     struct node *pidlist =  (struct node*) malloc(sizeof(struct node));
     int mRC = 0 ; // Return code for this function
     int sRC = 0 ; // Return code for system calls
@@ -114,11 +116,13 @@ int traceChildProcess( pid_t tracedPid )
     int get=0;
     siginfo_t si;
     intptr_t sig = 0;
+    pid_t child_waited = stoppedPid;
+    pid_t npid= stoppedPid;
     //ptrace(PTRACE_CONT, tracedPid, NULL, NULL);
     for (;;)
     {
-        pid_t child_waited = waitpid(-1, &status, __WALL); //if I am in forked thread then do I get to recieve signal from this forked thread?
-                                                        // And in return get the pid of that thread?
+        child_waited = waitpid(-1, &status,__WCLONE | __WALL);//if I am in forked thread then do I get to recieve signal from this forked thread?
+                                                    // And in return get the pid of that thread?
         if (child_waited == -1)
         {
             fprintf(stderr, "parent: waitpid(1) failed : %s\n",
@@ -183,46 +187,49 @@ int traceChildProcess( pid_t tracedPid )
                     case PTRACE_EVENT_VFORK:
                         //fprintf(stderr, "parent: ptrace event (PTRACE_EVENT_VFORK)\n");
                         ptrace(PTRACE_GETEVENTMSG,child_waited,NULL, (long) &newpid);
-                        child_waited = newpid;
-                        insertLast(child_waited,child_waited);
-                        ptrace(PTRACE_SETOPTIONS,child_waited,NULL,ptrace_setoptions);
-                        ptrace(PTRACE_SYSCALL,child_waited,NULL,NULL);
+                        insertLast(newpid,newpid);
+                        ptrace(PTRACE_SETOPTIONS,newpid,NULL,ptrace_setoptions);
+                        ptrace(PTRACE_SYSCALL,newpid,NULL,NULL);
+                        //ptrace(PTRACE_CONT, newpid, NULL, NULL);
                         fprintf(stderr,
-                                "parent: ptrace event (PTRACE_EVENT_vFORK) [%d]\n",
-                                child_waited);
-                                 ptrace(PTRACE_CONT, child_waited, NULL, NULL); //sir
+                        "parent: ptrace event (PTRACE_EVENT_vFORK) [%d]\n",
+                        newpid);
+                        ptrace( PTRACE_SYSCALL, child_waited, NULL, NULL); //sir
                         inchild = 1;
+                        //child_waited = newpid;
+
 
                         break;
                     case PTRACE_EVENT_FORK:
 //                        fprintf(stderr, "parent: ptrace event (PTRACE_EVENT_FORK)\n");
                         ptrace(PTRACE_GETEVENTMSG,child_waited,NULL, (long) &newpid);
-                         child_waited = newpid;
-                         insertLast(child_waited,child_waited);
-                        ptrace(PTRACE_SETOPTIONS,child_waited,NULL,ptrace_setoptions);
-                        ptrace(PTRACE_SYSCALL,child_waited,NULL,NULL);
+                        insertLast(newpid,newpid);
+                        ptrace(PTRACE_SETOPTIONS,newpid,NULL,ptrace_setoptions);
+                        ptrace(PTRACE_SYSCALL,newpid,NULL,NULL);
+                        //ptrace(PTRACE_CONT, newpid, NULL, NULL);
                         fprintf(stderr,
-                                "parent: ptrace event (PTRACE_EVENT_FORK) [%d]\n",
-                                child_waited);
-                                 ptrace(PTRACE_CONT, child_waited, NULL, NULL); //sir
+                        "parent: ptrace event (PTRACE_EVENT_FORK) [%d]\n",
+                        newpid);
+                        ptrace( PTRACE_SYSCALL, child_waited, NULL, NULL); //sir
                         inchild = 1;
+
 
 //                printf("Attached to offspring %ld\n",(pid_t)newpid);
                         break;
                     case PTRACE_EVENT_CLONE:
-                    {
-                        ptrace(PTRACE_GETEVENTMSG, child_waited, 0, &newpid);
-                         child_waited = newpid;
-                         insertLast(child_waited,child_waited);
-                        ptrace(PTRACE_SETOPTIONS,child_waited,NULL,ptrace_setoptions);
-                        ptrace(PTRACE_SYSCALL,child_waited,NULL,NULL);
+                        ptrace(PTRACE_GETEVENTMSG,child_waited,NULL, (long) &newpid);
+                        insertLast(newpid,newpid);
+                        ptrace(PTRACE_SETOPTIONS,newpid,NULL,ptrace_setoptions);
+                        ptrace(PTRACE_SYSCALL,newpid,NULL,NULL);
+                        //ptrace(PTRACE_CONT, newpid, NULL, NULL);
                         fprintf(stderr,
-                                "parent: ptrace event (PTRACE_EVENT_CLONE) [%d]\n",
-                                child_waited);
-                                 ptrace(PTRACE_CONT, child_waited, NULL, NULL); //sir
+                        "parent: ptrace event (PTRACE_EVENT_CLONE) [%d]\n",
+                        newpid);
+                        ptrace( PTRACE_SYSCALL, child_waited, NULL, NULL); //sir
                         inchild = 1;
+                        //child_waited = newpid;
+
                         break;
-                    }
                     case PTRACE_EVENT_VFORK_DONE:
                         fprintf(stderr, "parent: ptrace event (PTRACE_EVENT_VFORK_DONE)\n");
                         break;
@@ -274,13 +281,16 @@ int traceChildProcess( pid_t tracedPid )
                 // the child process terminated
                 //
 
-                fprintf(stderr, "parent: child terminated [%d]\n",last->pid);
-                deleteLast();
-                if(!(isEmpty())){
-                 child_waited = last->pid;
-                }else{
+                fprintf(stderr, "parent: [%d] terminated [%d]\n",head->pid,last->pid);
+                deletepid(child_waited);
+                displayForward();
+                if(isEmpty()){
                 goto exit;
                 }
+//              else{
+//              child_waited = stoppedPid;
+//              }
+
 
 //                child_waited = stoppedPid; //look at this jugaar //why it isnt getting the pid of parent :(
             }
@@ -349,7 +359,7 @@ int traceChildProcess( pid_t tracedPid )
 
         if ( -1 == sRC )
         {
-            eprintf( "ptrace failed with request PTRACE_GETREGS:%s\n", strerror( errno ) ) ;
+            eprintf( "\nptrace failed with request PTRACE_GETREGS:%s = [%d]\n", strerror( errno ), child_waited ) ;
 //            mRC = 1 ;//march31
 //            inchild = 0;
             //stoppedPid = waitpid(newpid, &status, __WALL);
@@ -365,15 +375,15 @@ int traceChildProcess( pid_t tracedPid )
             //Stderr, also known as standard error, is the default file descriptor where a process can write error messages.
             //if the call is entry then we have got the syscall number that we are just entered into in origrax and it easily can be converted to name via array
 
-            fprintf( stderr, " %d: %s( ", child_waited, syscalls[registers.orig_rax]) ; //the unistd_64.h file have all the numbers that ORIG_RAX will contain
+            fprintf( stderr, "\n %d: %s( ", child_waited, syscalls[registers.orig_rax]) ; //the unistd_64.h file have all the numbers that ORIG_RAX will contain
 
             //The correct header file to get the system call numbers is sys/syscall.h. The constants are called SYS_### where ### is the name of the system call you are interested in. The __NR_### macros are implementation details and should not be used.
             fprintf( stderr, " %d:",registers.orig_rax);
             switch( registers.orig_rax )
             {
-            case 0:
-                fprintf( stderr, "why am in case 0");
-            break;
+//            case 0:
+//                fprintf( stderr, "why am in case 0");
+//            break;
       //segmentation fault in case of write March31
             //__NR_open is a macro in the preprocessing it converts into 5 and the next statement would be like case 5:
             case __NR_open:   //define __NR_Open 5:
@@ -388,14 +398,14 @@ int traceChildProcess( pid_t tracedPid )
 //                         fileName, registers.rcx, registers.rdx ) ;
                 //I commented above and changed it to check the results
                 fileName = readString( child_waited,registers.rcx);
-                fprintf( stderr, "\"%s\", %#08x, %#08x",
+                fprintf( stderr, "\n\"%s\", %#08x, %#08x",
                          fileName, registers.rcx, registers.rdx ) ;
             }
             break ;
             //__NR_Exit is a macro in the preprocessing it converts into 60 and the next statement would be like case 60:
             //segmentation fault in case of write March31
             case __NR_exit: //define __NR_Exit 60:
-                fprintf( stderr, "%#08x, %#08x, %#08x ) = ?\n",
+                fprintf( stderr, "\n%#08x, %#08x, %#08x ) = ?\n",
                          registers.rbx, registers.rcx, registers.rdx
                        ) ;
                 // If the traced process is bailing, so should we
@@ -427,6 +437,7 @@ int traceChildProcess( pid_t tracedPid )
                 fprintf( stderr, "#Err: %s\n", errors[ abs(
                         registers.rax ) ] ) ;
             }
+//            else if(registers.rax != 0)
             else
             {
 // return code
